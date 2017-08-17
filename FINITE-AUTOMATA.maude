@@ -35,8 +35,14 @@ fmod FINITE-AUTOMATA is
 	subsorts CFA < FA .
 	cmb A : CFA if not (Start)--+-->(Start)  /\ out(finalState) == 0 .
 	
-	op  [_] : Label -> CFA .    --- Base case that recognizes a string literal
-	op _>>_ : CFA CFA -> CFA .	 --- Concatenation 
-	op _|_  : CFA CFA -> CFA.    --- Alternation
+	op  {_} : InputSet -> CFA .    --- Base case that recognizes a string literal
+	op  __  : CFA CFA  -> CFA .	 --- Concatenation 
+	op _|_  : CFA CFA  -> CFA.    --- Alternation
 	op _*   : CFA -> CFA .       --- Closure 
 
+	op example : -> CFA .
+	eq example = ({1} * {0 1} * {0} )* {1} * .
+
+	--- eq {L} = (Start)--(L)-->(End) .
+	--- -eq CFA >> CFA' = (S)--(L)-->(S''') ; (S''')--(L')-->(S'') ; ... ; ...' if (S)--(L)-->(End) ; ... := CFA /\ (Start)--(L')-->(S'') ; ...' := CFA' [nonexec] .
+	--- eq CFA | CFA' = (Start)--(€)-->(S') ; (Start)--(€)-->(S'') ;    
