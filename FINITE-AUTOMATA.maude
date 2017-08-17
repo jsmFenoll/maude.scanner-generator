@@ -1,0 +1,42 @@
+fmod FINITE-AUTOMATA is 
+	sorts FA . --- Finite Automata 
+	sorts State Transition Label .
+	sorts InitialState FinalState .
+	subsorts InitialState FinalState < State .
+	subsort Transition < FA .
+	op € : -> Label .
+	op Start : -> InitialState .
+	op End   : -> FinalState .
+	
+	op _--_-->_ : State Label State        -> Transition .
+	--- Transitions with distinct labels are excluyent
+	op _;_      : FA FA                    -> FA [assoc comm].
+	
+	op _--+-->_ : State State -> Bool .  
+	ceq (S)--+-->(S')/ A = true if (S)--(L)-->(S'') ; ...  := A /\ (S'')--+-->(S')/ ... .
+
+	op in_/_ : State AF -> NAT .
+	eq in(S:State)/(S')--(L)-->(S) = 1 .
+	eq in(S:State/((S')--(L)-->(S) ; ...) = in(S:State)/... + 1  .		
+	eq in(S:State)/... = 0 [owise] .
+
+	op out_/_ : State AF -> NAT .
+	eq out(S:State)/(S)--(L)-->(S') = 1 .
+	eq out(S:State/((S)--(L)-->(S') ; ...) = out(S:State)/... + 1  .		
+	eq out(S:State)/... = 0 [owise] .
+
+
+	subsorts DFA < NFA < FA . --- Deterministic finite automata an Non-Deterministic finite automata
+	cmb A : NFA if (S)-- L -->(S') ; (S)-- L' -->(S'') ; ... := A /\ S' =/= S'' /\ L =/= L' [nonexec].  
+	cmb A : DFA if (S)-- L -->(S') ; ... := A  /\ not (S)-- L' --> (S'') ; ...' := ... [nonexec] .
+	
+	
+	sort CFA . --- Component Finite automata : A Finite automata that can be concatenated, alternated and clousured
+	subsorts CFA < FA .
+	cmb A : CFA if not (Start)--+-->(Start)  /\ out(finalState) == 0 .
+	
+	op  [_] : Label -> CFA .    --- Base case that recognizes a string literal
+	op _>>_ : CFA CFA -> CFA .	 --- Concatenation 
+	op _|_  : CFA CFA -> CFA.    --- Alternation
+	op _*   : CFA -> CFA .       --- Closure 
+
