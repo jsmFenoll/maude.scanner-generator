@@ -1,48 +1,104 @@
+
+fmod STATE is 
+	sorts State  Substitution .
+	op _/_ : State State -> Substitution . 
+ endfm 
+
+view Substitution from TRIV to STATE is sort Elt to Substitution . endv 
+
 fmod FINITE-AUTOMATA is 
-	sorts FA . --- Finite Automata 
-	sorts State Transition Label .
+	protecting STATE .
+	protecting NAT * (op s to s') .
+	protecting QID-LIST * (sort Qid to Input,sort QidList to InputSeq) .
+
+	sort FA . --- Finite Automata 
+	sort Transition .
 	sorts InitialState FinalState .
 	subsorts InitialState FinalState < State .
 	subsort Transition < FA .
-	op € : -> Label .
+	op € : -> Input .
 	op Start : -> InitialState .
 	op End   : -> FinalState .
-	
-	op _--_-->_ : State Label State        -> Transition .
-	--- Transitions with distinct labels are excluyent
-	op _;_      : FA FA                    -> FA [assoc comm].
-	
-	op _--+-->_ : State State -> Bool .  
-	ceq (S)--+-->(S')/ A = true if (S)--(L)-->(S'') ; ...  := A /\ (S'')--+-->(S')/ ... .
 
-	op in_/_ : State AF -> NAT .
-	eq in(S:State)/(S')--(L)-->(S) = 1 .
-	eq in(S:State/((S')--(L)-->(S) ; ...) = in(S:State)/... + 1  .		
-	eq in(S:State)/... = 0 [owise] .
-
-	op out_/_ : State AF -> NAT .
-	eq out(S:State)/(S)--(L)-->(S') = 1 .
-	eq out(S:State/((S)--(L)-->(S') ; ...) = out(S:State)/... + 1  .		
-	eq out(S:State)/... = 0 [owise] .
-
-
-	subsorts DFA < NFA < FA . --- Deterministic finite automata an Non-Deterministic finite automata
-	cmb A : NFA if (S)-- L -->(S') ; (S)-- L' -->(S'') ; ... := A /\ S' =/= S'' /\ L =/= L' [nonexec].  
-	cmb A : DFA if (S)-- L -->(S') ; ... := A  /\ not (S)-- L' --> (S'') ; ...' := ... [nonexec] .
+	op _--_-->_ : State Input State        -> Transition .
+	op _;_      : FA FA                    -> FA [assoc comm] .
 	
-	
+
 	sort CFA . --- Component Finite automata : A Finite automata that can be concatenated, alternated and clousured
-	subsorts CFA < FA .
-	cmb A : CFA if not (Start)--+-->(Start)  /\ out(finalState) == 0 .
+	subsort CFA < FA .
 	
-	op  {_} : InputSet -> CFA .    --- Base case that recognizes a string literal
-	op  __  : CFA CFA  -> CFA .	 --- Concatenation 
-	op _|_  : CFA CFA  -> CFA.    --- Alternation
+	op  {_} : InputSeq -> CFA .    --- Base case that recognizes a string literal
+	op  __  : CFA CFA  -> CFA  [prec 35] .	 --- Concatenation 
+	op _|_  : CFA CFA  -> CFA .    --- Alternation
 	op _*   : CFA -> CFA .       --- Closure 
 
-	op example : -> CFA .
+	--- s(1),s(2)..... = Current States . n(1),n(2)....... = New States . // ... // : New States --> Current States 
+	var Input : Input . var InputSeq : InputSeq . vars CFA CFA' : CFA . 	
+
+	eq { Input } = (Start)--(Input)-->(End) .
+	eq { Input InputSeq } = { Input } { InputSeq } .
+	eq CFA CFA' = // CFA[End / n(1)] ; CFA'[Start / n(1) ] // .
+
+	eq CFA | CFA' = // (Start)--(€)-->(n(1)) ; (Start)--(€)-->(n(2)) ; CFA[Start / n(1),End / n(3)] ; CFA'[Start / n(2),End / n(4)] ; (n(3))--(€)-->(End) ; (n(4))--(€)-->(End) // . 
+	eq CFA * = // (Start)--(€)-->(n(1)) ; (Start)--(€)-->(End) ; CFA[Start / n(1),End / n(2)] ; (n(2))--(€)-->(n(1)) ; (n(2))--(€)-->(End) // .
+
+	--- Substitution 
+	protecting SET{Substitution} * ( sort Set{Substitution} to SubstitutionSet) .
+	op _[_] : CFA SubstitutionSet -> CFA .
+
+
+	--- Normalization . 
+	ops s n : Nat -> State .
+	op //_// : CFA -> CFA .
+endfm 	
+	op //_;_// : Nat CFA -> CFA .
+	eq // CFA // = // maxIndex(CFA) ; CFA // .
+	eq // MAX ; (n(N)--(L)-->(S) ; ... // = // MAX ; (s(MAX + N)--(L)-->(S) ; ... // .
+	eq // MAX ; CFA // = CFA  [owise] .   
+	op maxIndex : CFA -> Nat .
+	eq maxIndex(s(N)--(L)-->(s(N') ; CFA) = maximum(maximum(N,N'),maxIndex(CFA)) .
+	eq maxIndex(s(N)--(L)-->(S) ; CFA) = maximum(N,maxIndex(CFA)) .
+	eq maxIndex((S)--(L)-->(s(N) ; CFA) = maximum(N,maxIndex(CFA)) .
+	eq maxIndex(CFA) = 0 [owise] .			
+
+    op example : -> CFA .
 	eq example = ({1} * {0 1} * {0} )* {1} * .
+    )
+endfm 
+
+--- red {'0} .
+--- red {'0 '1} .
+--- red {'0'} {'1}
+--- red {'0} | {'1} .
+--- red {'0} * .
+
+
+
+
+
+---	cmb A : CFA if not (Start)-->+(Start)  /\ out(finalState) == 0 .
+	
+---	op _-->+_ : State State -> Bool .  --- Estado Alcanzable
+---	ceq (S)-->+(S') / A = true if (S)--(L)-->(S'') ; A'  := A /\ (S'')-->+(S') / A' .
+
+---	op in_/_ : State AF -> NAT .
+---	eq in(S:State)/(S')--(L)-->(S) = 1 .
+---	eq in(S:State/((S')--(L)-->(S) ; ...) = in(S:State)/... + 1  .		
+---	eq in(S:State)/... = 0 [owise] .
+---
+---	op out_/_ : State AF -> NAT .
+---	eq out(S:State)/(S)--(L)-->(S') = 1 .
+---	eq out(S:State/((S)--(L)-->(S') ; ...) = out(S:State)/... + 1  .		
+---	eq out(S:State)/... = 0 [owise] .
+
+
+	--- subsorts DFA < NFA < FA . --- Deterministic finite automata an Non-Deterministic finite automata
+	--- cmb A : NFA if (S)-- L -->(S') ; (S)-- L' -->(S'') ; ... := A /\ S' =/= S'' /\ L =/= L' [nonexec].  
+	--- cmb A : DFA if (S)-- L -->(S') ; ... := A  /\ not (S)-- L' --> (S'') ; ...' := ... [nonexec] .
+
+
 
 	--- eq {L} = (Start)--(L)-->(End) .
 	--- -eq CFA >> CFA' = (S)--(L)-->(S''') ; (S''')--(L')-->(S'') ; ... ; ...' if (S)--(L)-->(End) ; ... := CFA /\ (Start)--(L')-->(S'') ; ...' := CFA' [nonexec] .
 	--- eq CFA | CFA' = (Start)--(€)-->(S') ; (Start)--(€)-->(S'') ;    
+
